@@ -1,0 +1,24 @@
+* Tasks
+** Master process
+*** Task object with complexity
+*** `Stop message` passing
+*** `Continue message` passing
+*** Decide procedure
+**** Total weight over threshold (T)
+**** ;; Variance of Comp Load over threshold (TLd)
+**** Variance of weight over threshold as secondary parameter
+*** Migration procedure (move the fattest task)
+**** Send a message to a task sender
+** Slave process
+*** Getting load info
+*** Computing remaining tasks weight
+*** Sending info to master
+*** Migration procedure
+**** Receive message from master
+**** Serialize an identified task
+**** Send it to specified node
+*** Ability to stop and continue work
+
+* Notes
+
+[[http://masters.donntu.org/2012/fknt/volokhova/library/article3.htm][Some theory]]
