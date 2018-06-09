@@ -22,3 +22,22 @@
 * Notes
 
 [[http://masters.donntu.org/2012/fknt/volokhova/library/article3.htm][Some theory]]
+
+Placing new task w = 3 on node 0
+Placing new task w = 3 on node 2
+Placing new task w = 2 on node 1
+Placing new task w = 2 on node 4
+Placing new task w = 2 on node 3
+Placing new task w = 2 on node 4
+Placing new task w = 1 on node 2
+Placing new task w = 3 on node 2
+Placing new task w = 1 on node 1
+Placing new task w = 1 on node 2
+Load: 3 3 8 2 4
+Std. dev. 2.0976176963403033
+Median load: 3
+Min loaded: 3, Max loaded: 2
+Migrating...
+Load: 3 3 5 5 4
+Std. dev. 0.8944271909999159
+

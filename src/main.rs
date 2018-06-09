@@ -1,19 +1,21 @@
-//const TH_T: u32 =
+extern crate rand;
 
-#[derive(Debug)]
+use rand::Rng;
+
+#[derive(Debug, PartialEq)]
 struct Task {
-    name: &'static str,
+    name: String,
     weight: u8,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 struct SlaveNode {
     name: &'static str,
     queue: Vec<Task>,
 }
 
 impl Task {
-    pub fn new(name: &'static str, weight: u8) -> Self {
+    pub fn new(name: String, weight: u8) -> Self {
         Task {
             name: name,
             weight: weight,
@@ -43,9 +45,7 @@ impl SlaveNode {
     }
 }
 
-type Median<'a> = (&'a SlaveNode, &'a SlaveNode, f64);
-
-fn median_load<'a>(nodes: &'a [SlaveNode]) -> Median<'a> {
+fn median_load(nodes: &[SlaveNode]) -> (usize, usize) {
     let mut min = nodes.first().expect("Nodes required");
     let mut max = nodes.last().expect("Nodes required");
 
@@ -67,26 +67,84 @@ fn median_load<'a>(nodes: &'a [SlaveNode]) -> Median<'a> {
 
     loads.sort();
     let lc = loads.len();
-    let mut median = if lc % 2 == 0 {
+    let median = if lc % 2 == 0 {
         *loads.get(lc / 2).unwrap() as f64 + *loads.get((lc / 2) + 1).unwrap() as f64 / 2.0
     } else {
-        *loads.get((lc / 2) + 1).unwrap() as f64
+        *loads.get(lc / 2).unwrap() as f64
     };
 
-    (min, max, median)
+    println!("Median load: {}", median);
+
+    let min_pos = nodes.iter().position(|x| x == min).unwrap();
+    let max_pos = nodes.iter().position(|x| x == max).unwrap();
+
+    (min_pos, max_pos)
+}
+
+fn migrate(nodes: &mut Vec<SlaveNode>, from: usize, to: usize) {
+    let (f, t) = if from < to {
+        let (l,r) = nodes.split_at_mut(to);
+        let f = l.get_mut(from).unwrap();
+        let t = r.get_mut(0).unwrap();
+        (f, t)
+    } else {
+        let (l, r) = nodes.split_at_mut(from);
+        let f = r.get_mut(0).unwrap();
+        let t = l.get_mut(to).unwrap();
+        (f, t)
+    };
+
+    if let Some(task) = f.pop_fattest() {
+        t.place(task);
+    }
+}
+
+fn random_spawn(gen: &mut rand::ThreadRng, nodes: &mut [SlaveNode], count: u32) {
+    for _ in 0..count {
+        let w = gen.gen_range(1, 4);
+        let i = gen.gen_range(0, nodes.len());
+        let name = gen.gen_range(10, 50);
+
+        if let Some(n) = nodes.get_mut(i) {
+            n.place(Task::new(format!("Random {}", name), w));
+            println!("Placing new task w = {} on node {}", w, i);
+        }
+    }
+
+}
+
+fn monitor(nodes: &[SlaveNode]) {
+    println!("Load: {}", nodes.iter()
+             .map(|x| x.get_load().to_string())
+             .collect::<Vec<String>>()
+             .join(" "));
+}
+
+fn deviation(nodes: &[SlaveNode]) -> f64 {
+    let mean = (nodes.iter().fold(0, |acc, x| acc + x.get_load())) as f64 / nodes.len() as f64;
+    let s: f64 = nodes.iter().map(|x| (x.get_load() as f64 - mean) * (x.get_load() as f64 - mean)).sum();
+    f64::sqrt(s / nodes.len() as f64)
 }
 
 fn main() {
-    let mut node1 = SlaveNode::new("Node 1");
-    let mut node2 = SlaveNode::new("Node 2");
-    let mut node3 = SlaveNode::new("Node 3");
-    let mut node4 = SlaveNode::new("Node 4");
-    let mut node5 = SlaveNode::new("Node 5");
+    let mut nodes = vec![];
+    nodes.push(SlaveNode::new("Node 0"));
+    nodes.push(SlaveNode::new("Node 1"));
+    nodes.push(SlaveNode::new("Node 2"));
+    nodes.push(SlaveNode::new("Node 3"));
+    nodes.push(SlaveNode::new("Node 4")) ;
 
-    node1.place(Task::new("Task 1", 5));
-    node1.place(Task::new("Task 2", 3));
-    node1.place(Task::new("Task 3", 4));
+    let mut generator = rand::prelude::thread_rng();
+    random_spawn(&mut generator, &mut nodes, 10);
 
-    let t = node1.pop_fattest();
-    println!("{:?}", t);
+    monitor(&nodes);
+    println!("Std. dev. {}", deviation(&nodes));
+    let (min_load, max_load) = median_load(&nodes);
+
+    println!("Min loaded: {}, Max loaded: {}", min_load, max_load);
+    println!("Migrating...");
+
+    migrate(&mut nodes, max_load, min_load);
+    monitor(&nodes);
+    println!("Std. dev. {}", deviation(&nodes));
 }
